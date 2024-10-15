@@ -1,0 +1,56 @@
+---
+- name: Instalar Docker e Docker Compose
+  hosts: all
+  become: yes
+  tasks:
+
+    - name: Verificar a distribuição do sistema
+      ansible.builtin.ansible_facts:
+      register: system_facts
+
+    - name: Instalar dependências
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+      when: system_facts.os_family == "Debian"
+
+    - name: Adicionar o repositório do Docker
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+        state: present
+      when: system_facts.os_family == "Debian"
+
+    - name: Instalar o Docker
+      apt:
+        name: docker-ce
+        state: present
+      when: system_facts.os_family == "Debian"
+
+    - name: Instalar o Docker Compose
+      shell: |
+        DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d\" -f4)
+        sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+      args:
+        executable: /bin/bash
+
+    - name: Verificar a instalação do Docker
+      command: docker --version
+      register: docker_version
+
+    - name: Verificar a instalação do Docker Compose
+      command: docker-compose --version
+      register: compose_version
+
+    - name: Exibir versão do Docker
+      debug:
+        msg: "Docker versão: {{ docker_version.stdout }}"
+
+    - name: Exibir versão do Docker Compose
+      debug:
+        msg: "Docker Compose versão: {{ compose_version.stdout }}"
+

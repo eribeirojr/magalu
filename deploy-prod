@@ -1,0 +1,25 @@
+# Define as versões
+DJANGO_IMAGE = django:latest
+POSTGRES_IMAGE = postgres:latest
+
+# Diretórios de volume
+POSTGRES_DATA_DIR = /opt/postgres/data
+DJANGO_APP_DIR = /opt/helloworld/app
+
+# Alvo para subir os serviços
+deploy-prod:
+	docker run -d \
+		--name postgres \
+		-e POSTGRES_USER=postgres \
+		-e POSTGRES_PASSWORD=postgres \
+		-p 5432:5432 \
+		-v $(POSTGRES_DATA_DIR):/var/lib/postgresql/data \
+		$(POSTGRES_IMAGE)
+
+	docker run -d \
+		--name django \
+		-p 8000:8000 \
+		-v $(DJANGO_APP_DIR):/app \
+		$(DJANGO_IMAGE)
+
+.PHONY: deploy-prod
